@@ -36,9 +36,11 @@ const verifyToken = (req, res, next) => {
 const decodeJwt = (token) => {
 	let base64Url = token.split('.')[1];
 	let base64 = base64Url.replace('-', '+').replace('_', '/');
-	let decodedData = JSON.parse(Buffer.from(base64, 'base64').toString('binary'));
+	let decodedData = JSON.parse(
+		Buffer.from(base64, 'base64').toString('binary')
+	);
 	return decodedData;
-}
+};
 
 app.get('/', (req, res) => {
 	res.send('<h1>EJ2 Job Manager API</h1>');
@@ -51,7 +53,7 @@ app.post('/maintain-login', verifyToken, (req, res) => {
 		} else {
 			const data = decodeJwt(req.token);
 			res.json({
-				user: data.user
+				user: data.user,
 			});
 		}
 	});
@@ -65,20 +67,28 @@ app.post('/login', async (req, res) => {
 		res.status(403).send('user not found');
 	} else {
 		const passwordIsCorrect = await bcrypt.compare(password, user.hash);
-		res.send(passwordIsCorrect);
+		if (passwordIsCorrect) {
+			const frontendUser = {
+				username: user.username,
+				firstName: user.firstName,
+				lastName: user.lastName,
+				accessGroups: user.accessGroups,
+			};
+			jwt.sign(
+				{ user: frontendUser },
+				'secretkey',
+				{ expiresIn: '20s' },
+				(err, token) => {
+					res.json({
+						user: frontendUser,
+						token,
+					});
+				}
+			);
+		} else {
+			res.status(403).send('bad password');
+		}
 	}
-
-
-	// if (username === 'hans' && password === '123') {
-	//     jwt.sign({ user }, 'secretkey', { expiresIn: '20s' }, (err, token) => {
-	//         res.json({
-	//             user,
-	//             token
-	//         });
-	//     })
-	// } else {
-	//     res.sendStatus(403);
-	// }
 });
 
 app.get('/job-sources', async (req, res) => {
