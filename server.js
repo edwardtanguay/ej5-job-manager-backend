@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 
@@ -63,7 +64,8 @@ app.post('/login', async (req, res) => {
 	if (user === null) {
 		res.status(403).send('user not found');
 	} else {
-		res.send('FOUND USER');
+		const passwordIsCorrect = await bcrypt.compare(password, user.hash);
+		res.send(passwordIsCorrect);
 	}
 
 
